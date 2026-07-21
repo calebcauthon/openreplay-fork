@@ -33,8 +33,10 @@ export interface Options {
   buttonLabel: string
   /** Corner the floating button is anchored to. */
   buttonPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
-  /** Single pen color for freehand annotation (Tier 1). */
+  /** Colour selected when the annotation overlay opens. */
   penColor: string
+  /** Colour swatches offered in the annotation toolbar. Defaults to five. */
+  colors?: string[]
   /**
    * Custom issue key used when tagging the session (Path A).
    * Defaults to `user_report`.
@@ -142,11 +144,15 @@ export default class Report {
       return
     }
 
-    const annotation = new AnnotationCanvas({ penColor: this.options.penColor })
+    const annotation = new AnnotationCanvas({
+      penColor: this.options.penColor,
+      colors: this.options.colors,
+    })
     this.annotation = annotation
     annotation.mount({
+      screenshot,
       onSubmit: () => {
-        void this.submit(reportId, screenshot)
+        void this.submit(reportId)
       },
       onCancel: () => {
         this.teardownOverlay()
@@ -160,7 +166,7 @@ export default class Report {
     if (this.button) this.button.style.display = ''
   }
 
-  private async submit(reportId: string, screenshot: HTMLCanvasElement) {
+  private async submit(reportId: string) {
     const annotation = this.annotation
     if (!annotation) return
 
@@ -176,7 +182,7 @@ export default class Report {
 
     let blob: Blob
     try {
-      blob = await annotation.toBlob(screenshot)
+      blob = await annotation.toBlob()
     } catch (e) {
       this.app.debug.error('OpenReplay Report: encode failed', e)
       this.teardownOverlay()

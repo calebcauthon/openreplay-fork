@@ -2,11 +2,27 @@
 
 Adds a floating "Report a problem" button to your app. When a user clicks it,
 the plugin captures a screenshot of the current viewport, lets the user draw on
-it with a freehand pen, and on submit it (A) tags the OpenReplay session with a
-custom issue and (B) uploads the annotated screenshot to your backend.
+it up, and on submit it (A) tags the OpenReplay session with a custom issue and
+(B) uploads the annotated screenshot to your backend.
 
-This is **Tier 1**: a single freehand pen. No text, shapes, or multi-color
-tooling yet.
+## Markup tools
+
+| Tool   | Behaviour |
+| ------ | --------- |
+| Select | Click an annotation to select it, drag to move it. `Delete`/`Backspace` removes it, `Esc` deselects. Picking a colour while something is selected recolours it. |
+| Pen    | Freehand stroke. |
+| Box    | Drag a rectangle; previews while dragging. |
+| Text   | Click to place a caret, type, `Enter` to commit (`Esc` cancels). |
+
+Plus a colour palette, `Delete` and `Undo`. Annotations are kept as a shape list
+and repainted, so selection, moving and undo all work, and a rectangle previews
+as it's dragged; the result is flattened to a PNG on submit.
+
+Undo is snapshot-based and steps back over whole gestures — a drag is one undo,
+not one per pointer event. Boxes are hit-tested on their edges rather than their
+interior, so a rectangle drawn *around* other annotations doesn't swallow clicks
+meant for them. Shapes can be moved and deleted but not resized or reordered;
+that would need a full editor (tldraw/Excalidraw/Fabric).
 
 ## Installation
 
@@ -56,11 +72,12 @@ instance.
 
 | Option           | Description                                                        |
 | ---------------- | ------------------------------------------------------------------ |
-| `uploadBase`     | Base URL for `presign` / confirm upload endpoints.                 |
+| `uploadBase`     | Base URL of the API that accepts the upload.                       |
 | `projectId`      | Project id for upload URLs (falls back to the live session's).     |
 | `buttonLabel`    | Text on the floating trigger button.                               |
 | `buttonPosition` | `bottom-right` \| `bottom-left` \| `top-right` \| `top-left`.      |
-| `penColor`       | Single pen color for annotation.                                   |
+| `penColor`       | Colour selected when the overlay opens.                            |
+| `colors`         | Palette shown in the toolbar (defaults to five).                   |
 | `issueKey`       | Custom issue key used to tag the session (default `user_report`).  |
 | `onTag`          | Optional override for how the session is tagged (see below).       |
 
