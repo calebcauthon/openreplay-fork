@@ -141,6 +141,7 @@ services:
       - openreplay-net
     volumes:
       - ./migration-files/init_pg_schema.sql:/tmp/init_schema.sql
+      - ./migration-files/user_reports.sql:/tmp/user_reports.sql
     environment:
       PGHOST: postgresql
       PGPORT: 5432
@@ -157,6 +158,9 @@ services:
           done
           echo "PostgreSQL is up - executing command"
           psql -v ON_ERROR_STOP=1 -f /tmp/init_schema.sql
+          # Idempotent add-on migrations, applied to fresh AND existing databases
+          # (init_schema.sql above is version guarded and skips existing volumes).
+          psql -v ON_ERROR_STOP=1 -f /tmp/user_reports.sql
 
   clickhouse-migration:
     image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION}
@@ -515,6 +519,17 @@ services:
           - chalice-openreplay.app.svc.cluster.local
     volumes:
       - shared-volume:/mnt/efs
+      # Local API source overlaid on the prebuilt release image, so changes under
+      # api/ take effect on `make dev` (or `docker restart chalice`) without
+      # rebuilding/publishing an image. Paths are relative to the staged project
+      # dir (scripts/docker-compose/.local), so ../../../api == <repo>/api.
+      # Mounted file-by-file rather than mounting the whole directory: the image's
+      # /work also holds runtime files (.env, entrypoint.sh) that are not in the
+      # repo and would be hidden by a directory mount.
+      - ../../../api/app.py:/work/app.py:ro
+      - ../../../api/schemas/schemas.py:/work/schemas/schemas.py:ro
+      - ../../../api/chalicelib/core/user_reports.py:/work/chalicelib/core/user_reports.py:ro
+      - ../../../api/routers/subs/user_reports.py:/work/routers/subs/user_reports.py:ro
     env_file:
       - docker-envs/chalice.env
     depends_on:
@@ -593,6 +608,12 @@ services:
           - frontend-openreplay.app.svc.cluster.local
     volumes:
       - shared-volume:/mnt/efs
+      # Locally-built dashboard SPA overlaid on the prebuilt release image, so changes
+      # under frontend/ take effect without publishing an image. Unlike the API (plain
+      # Python, mounted per-file), this is a compiled bundle: run `make dev-frontend`
+      # to regenerate frontend/public before the mount means anything.
+      # Path is relative to the staged project dir (scripts/docker-compose/.local).
+      - ../../../frontend/public:/var/www/openreplay:ro
     env_file:
       - docker-envs/frontend.env
     depends_on:

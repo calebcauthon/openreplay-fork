@@ -10,6 +10,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import usePropertyNames from 'App/components/DataManagement/Properties/usePropertyNames';
+import UserReportImage from 'App/components/UserReports/UserReportImage';
 import { useStore } from 'App/mstore';
 import Event from 'App/mstore/types/Analytics/Event';
 import { Link } from 'App/routing';
@@ -77,6 +78,74 @@ function EventDetailsModal({
     },
     initialData: null,
   });
+  /**
+   * A user-submitted bug report arrives as a custom issue whose payload is a JSON
+   * *string* holding a `report_id`; the screenshot itself lives in our own storage.
+   *
+   * Rather than depend on one exact property name, scan every property for a value
+   * carrying a report id. The event travels ClickHouse -> Go API -> Event model, and
+   * which bucket a key lands in (`$properties` vs `properties`, hence defaultProps vs
+   * customProps) is not worth guessing at — anything containing a report id is ours.
+   *
+   * Declared before the loading/error returns below to keep hook order stable.
+   */
+  const userReport = React.useMemo(() => {
+    const props: Record<string, any> = event?.allProps ?? {};
+
+    /**
+     * The payload reaches us HTML-escaped — quotes arrive as `&#34;`, so a plain
+     * JSON.parse throws. Decode entities first, then fall back to pulling the uuid out
+     * directly, so any further escaping upstream can't silently hide the screenshot.
+     */
+    const decodeEntities = (s: string) =>
+      s
+        .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
+        .replace(/&#x([0-9a-f]+);/gi, (_, h) =>
+          String.fromCharCode(parseInt(h, 16)),
+        )
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
+
+    const readReportId = (value: any): string | null => {
+      if (!value) return null;
+      if (typeof value === 'object') return value.report_id ?? null;
+      if (typeof value !== 'string' || !value.includes('report_id')) return null;
+      const decoded = decodeEntities(value);
+      try {
+        const parsed = JSON.parse(decoded);
+        if (parsed?.report_id) return parsed.report_id;
+      } catch {
+        // Not valid JSON even after decoding — try the uuid directly below.
+      }
+      const match = /report_id\D{0,16}([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/.exec(
+        decoded,
+      );
+      return match ? match[1] : null;
+    };
+
+    for (const key of Object.keys(props)) {
+      const reportId = readReportId(props[key]);
+      if (reportId) return { reportId, diagnostic: null };
+    }
+
+    // Nothing found. If this still looks like one of our reports, surface what the
+    // event actually carries instead of rendering nothing at all — silence here is
+    // what makes this failure mode so hard to pin down.
+    const mentionsUs = Object.keys(props).some((k) =>
+      String(props[k]).includes('user_report'),
+    );
+    if (mentionsUs) {
+      return {
+        reportId: null,
+        diagnostic: Object.keys(props).sort().join(', ') || '(no properties)',
+      };
+    }
+    return { reportId: null, diagnostic: null };
+  }, [event]);
+
   const tabProps = event
     ? {
         all: event.allProps,
@@ -198,6 +267,15 @@ function EventDetailsModal({
           </Button>
         </Link>
       </div>
+      {userReport.reportId ? (
+        <UserReportImage reportId={userReport.reportId} />
+      ) : null}
+      {userReport.diagnostic ? (
+        <div className="rounded-lg border border-gray-light p-2 text-sm text-disabled-text">
+          {t('No screenshot found for this report. Properties present:')}{' '}
+          <span className="code-font">{userReport.diagnostic}</span>
+        </div>
+      ) : null}
       <div className="w-full">
         <Tabs items={tabs} activeKey={tab} onChange={setTab} />
       </div>

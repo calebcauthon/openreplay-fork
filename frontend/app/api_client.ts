@@ -31,6 +31,7 @@ const siteIdRequiredPaths: string[] = [
   '/usability-tests',
   '/tags',
   '/intelligent',
+  '/user-reports',
 ];
 
 const newApiUrls = [

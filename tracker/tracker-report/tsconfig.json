@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "alwaysStrict": true,
+    "target": "es2017",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "outDir": "./lib",
+    "rootDir": "src"
+  },
+  "exclude": ["**/*.test.ts"]
+}

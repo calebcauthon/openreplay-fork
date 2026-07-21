@@ -158,6 +158,13 @@ export const spot = (id = ':spotId', hash?: string | number): string =>
 
 export const highlights = (): string => '/highlights';
 
+export const userReports = (params?: Record<string, any>): string =>
+  queried('/user-reports', params);
+export const userReport = (
+  reportId = ':reportId',
+  hash?: string | number,
+): string => hashed(`/user-reports/${reportId}`, hash);
+
 export const kai = (): string => '/kai';
 export const mcpAuthorize = (): string => '/mcp/authorize';
 export const dataManagement = {
@@ -208,6 +215,9 @@ const REQUIRED_SITE_ID_ROUTES = [
   onboarding(''),
 
   highlights(),
+
+  userReports(),
+  userReport(''),
 
   kai(),
   dataManagement.activity(),

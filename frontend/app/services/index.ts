@@ -28,6 +28,7 @@ import KaiService from '@/components/Kai/KaiService';
 import SignalService from './SignalService';
 import BillingService from '@/services/BillingService';
 import AnalyticsService from './AnalyticsService';
+import UserReportsService from './UserReportsService';
 
 export const dashboardService = new DashboardService();
 export const metricService = new MetricService();
@@ -58,6 +59,7 @@ export const projectsService = new ProjectsService();
 export const kaiService = new KaiService();
 export const billingService = new BillingService();
 export const analyticsService = new AnalyticsService();
+export const userReportsService = new UserReportsService();
 
 export const services = [
   projectsService,
@@ -88,4 +90,5 @@ export const services = [
   kaiService,
   billingService,
   analyticsService,
+  userReportsService,
 ];

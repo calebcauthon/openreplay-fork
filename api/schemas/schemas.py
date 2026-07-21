@@ -1236,3 +1236,8 @@ class SessionModel(BaseModel):
 class UsabilityTestQuery(_PaginatedSchema):
     live: bool = Field(default=False)
     user_id: Optional[str] = Field(default=None)
+
+
+# User reports feature: the end-user's browser POSTs the annotated screenshot bytes
+# directly to the API (raw body + query-string metadata), so no request-body schema is
+# needed here — see routers/subs/user_reports.py.

@@ -3,6 +3,7 @@
   "private": true,
   "workspaces": [
     "tracker",
-    "tracker-assist"
+    "tracker-assist",
+    "tracker-report"
   ]
 }

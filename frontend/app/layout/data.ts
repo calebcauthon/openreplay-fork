@@ -62,6 +62,7 @@ export const enum MENU {
   DATA_MANAGEMENT = 'data-management',
   SEGMENTS = 'data-segments',
   TAGS = 'data-tags',
+  USER_REPORTS = 'user-reports',
 }
 
 export const categories: (t: TFunction) => Category[] = (t) => [
@@ -92,6 +93,12 @@ export const categories: (t: TFunction) => Category[] = (t) => [
         label: t('Highlights'),
         key: MENU.HIGHLIGHTS,
         icon: 'chat-square-quote',
+      },
+      {
+        // TODO(scaffold): pick a final icon; 'card-list' reused from existing icon set
+        label: t('User Reports'),
+        key: MENU.USER_REPORTS,
+        icon: 'card-list',
       },
     ],
   },

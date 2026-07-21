@@ -32,6 +32,12 @@ const components: any = {
   SpotsListPure: lazy(() => import('Components/Spots/SpotsList')),
   SpotPure: lazy(() => import('Components/Spots/SpotPlayer')),
   HighlightsPure: lazy(() => import('Components/Highlights/HighlightsList')),
+  UserReportsListPure: lazy(
+    () => import('Components/UserReports/UserReportsList'),
+  ),
+  UserReportViewPure: lazy(
+    () => import('Components/UserReports/UserReportView'),
+  ),
   KaiPure: lazy(() => import('Components/Kai/KaiChat')),
   ActivityPure: lazy(
     () => import('Components/DataManagement/Activity/ActivityPage'),
@@ -66,6 +72,8 @@ const enhancedComponents: any = {
   SpotsList: withSiteIdUpdater(components.SpotsListPure),
   Spot: components.SpotPure,
   Highlights: withSiteIdUpdater(components.HighlightsPure),
+  UserReportsList: withSiteIdUpdater(components.UserReportsListPure),
+  UserReportView: withSiteIdUpdater(components.UserReportViewPure),
   Kai: withSiteIdUpdater(components.KaiPure),
   ScopeSetup: components.ScopeSetup,
   Activity: withSiteIdUpdater(components.ActivityPure),
@@ -111,6 +119,8 @@ const SPOTS_LIST_PATH = routes.spotsList();
 const SPOT_PATH = routes.spot();
 
 const HIGHLIGHTS_PATH = routes.highlights();
+const USER_REPORTS_PATH = routes.userReports();
+const USER_REPORT_PATH = routes.userReport();
 const KAI_PATH = routes.kai();
 
 function PrivateRoutes() {
@@ -343,6 +353,14 @@ function PrivateRoutes() {
         <Route
           path={withSiteId(HIGHLIGHTS_PATH, siteIdList)}
           element={<enhancedComponents.Highlights />}
+        />
+        <Route
+          path={withSiteId(USER_REPORT_PATH, siteIdList)}
+          element={<enhancedComponents.UserReportView />}
+        />
+        <Route
+          path={withSiteId(USER_REPORTS_PATH, siteIdList)}
+          element={<enhancedComponents.UserReportsList />}
         />
 
         <Route

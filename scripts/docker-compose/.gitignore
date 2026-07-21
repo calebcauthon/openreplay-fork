@@ -1,1 +1,4 @@
 hacks/yamls
+.local/
+common.env.local
+common.env.bak

@@ -1240,6 +1240,22 @@ CREATE TABLE public.assist_records
     duration   integer                     NOT NULL
 );
 
+CREATE TABLE public.user_reports
+(
+    report_id  uuid                     PRIMARY KEY,
+    project_id integer                  NOT NULL REFERENCES public.projects (project_id) ON DELETE CASCADE,
+    session_id bigint                   NULL,
+    file_key   text                     NOT NULL,
+    note       text                     NULL     DEFAULT NULL,
+    page_url   text                     NULL     DEFAULT NULL,
+    -- replay offset in ms from session start; enables deep-linking to the exact moment
+    time_ms    bigint                   NULL     DEFAULT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT now()
+);
+
+CREATE INDEX user_reports_project_id_session_id_idx ON public.user_reports (project_id, session_id);
+CREATE INDEX user_reports_project_id_created_at_idx ON public.user_reports (project_id, created_at DESC);
+
 CREATE TABLE public.assist_events
 (
     event_id   varchar NOT NULL PRIMARY KEY,

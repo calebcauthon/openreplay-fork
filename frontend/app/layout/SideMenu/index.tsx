@@ -117,6 +117,7 @@ function SideMenu(props: Props) {
     [PREFERENCES_MENU.BILLING]: () => client(CLIENT_TABS.BILLING),
     [PREFERENCES_MENU.MODULES]: () => client(CLIENT_TABS.MODULES),
     [MENU.HIGHLIGHTS]: () => withSiteId(routes.highlights(), siteId),
+    [MENU.USER_REPORTS]: () => withSiteId(routes.userReports(), siteId),
     [PREFERENCES_MENU.EXPORTED_VIDEOS]: () => client(CLIENT_TABS.VIDEOS),
     [MENU.ACTIVITY]: () => withSiteId(routes.dataManagement.activity(), siteId),
     [MENU.USERS]: () => withSiteId(routes.dataManagement.usersList(), siteId),
