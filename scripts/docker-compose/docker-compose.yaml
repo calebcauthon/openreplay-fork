@@ -22,6 +22,7 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION}
     container_name: clickhouse
+    restart: unless-stopped
     volumes:
       - clickhouse:/var/lib/clickhouse
     networks:
