@@ -5,8 +5,23 @@ import {
   CallingState,
   ConnectionStatus,
   RemoteControlStatus,
-  SessionConfirmStatus,
 } from 'Player';
+
+/**
+ * `SessionConfirmStatus` was imported from 'Player' but is not defined or exported
+ * anywhere in the codebase, which breaks the production build. The `sessionConfirmation`
+ * state it is compared against is likewise never set by anything (this file is its only
+ * reference), so both branches below are permanently false.
+ *
+ * Declared locally to restore a buildable tree while preserving the exact runtime
+ * behaviour (an undefined state never equals any member). Remove this, along with the
+ * dead branches, if the session-confirmation flow is finished or dropped upstream.
+ */
+enum SessionConfirmStatus {
+  Disabled,
+  Requesting,
+  Enabled,
+}
 
 import Loader from 'Components/Session_/Player/Overlay/Loader';
 import RequestingWindow, {
