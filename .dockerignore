@@ -1,0 +1,15 @@
+# Build context for the Railway all-in-one image (deploy/railway/Dockerfile) is the repo
+# root. Keep it lean and never ship local dependency/build trees — the image rebuilds them.
+**/node_modules
+**/.venv
+**/__pycache__
+**/*.pyc
+.git
+.github
+frontend/public
+frontend/.parcel-cache
+frontend/.yarn/cache
+frontend/.yarn/install-state.gz
+**/.DS_Store
+.serena
+scratchpad

@@ -1,0 +1,65 @@
+# Rendered to /etc/nginx/conf.d/openreplay.conf at boot (envsubst fills ${PORT}).
+# Included inside the http{} block of the stock Debian nginx.conf.
+
+# Preserve the edge-supplied scheme (Railway terminates TLS and sets X-Forwarded-Proto).
+map $http_x_forwarded_proto $origin_proto {
+    default $http_x_forwarded_proto;
+    ''      $scheme;
+}
+
+server {
+    listen ${PORT} default_server;
+    server_name _;
+
+    client_max_body_size 100m;
+    client_body_buffer_size 512k;
+    proxy_connect_timeout 120s;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+
+    root /var/www/openreplay;
+    index index.html;
+
+    server_tokens off;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    # Object storage (MinIO). Presigned share URLs point at https://<domain>/<bucket>/<key>,
+    # and the public report upload also lands under /user-reports. Path-style => these are
+    # real path prefixes. (/|$) matters: the S3 API issues bucket ops with no trailing slash.
+    location ~ ^/(mobs|sessions-assets|static|sourcemaps|records|spots|user-reports)(/|$) {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        chunked_transfer_encoding off;
+        proxy_pass http://127.0.0.1:9000;
+    }
+
+    # Python dashboard API (chalice). The SPA calls same-origin /api; chalice mounts at
+    # root, so strip the /api prefix (root_path=/api keeps generated URLs correct).
+    location /api/ {
+        rewrite ^/api/(.*) /$1 break;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $origin_proto;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_pass http://127.0.0.1:8000;
+        add_header Cache-Control "no-store,no-cache" always;
+        add_header Pragma "no-cache" always;
+    }
+
+    # SPA. The entry document must not be cached, or a stale index.html pulls
+    # now-missing hashed chunks (missing assets fall through to index => HTTP 200 HTML,
+    # not 404). Hashed assets under /assets are safe to cache hard.
+    location = /index.html {
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+        try_files /index.html =404;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
