@@ -56,11 +56,21 @@
 : "${ASSIST_KEY:=change_me_assist_key}"
 
 : "${root_path:=/api}"
-: "${LOGLEVEL:=INFO}"
+# WARNING (not INFO): at INFO chalice's log_all_requests middleware emits one line
+# per request and apscheduler logs every job run, which on Railway trips the
+# 500-logs/sec/replica limit. WARNING still surfaces non-2xx and slow-request logs.
+: "${LOGLEVEL:=WARNING}"
+
+# The ingestion/backend microservices (http, sink, ender, storage, ...) are NOT part of
+# this reports-only image. get_health() (hit by the SPA's /health poll) otherwise probes
+# all of them at their k8s DNS names; each unreachable probe dumps a full urllib3
+# connection traceback (~300 log lines per /health call), which alone trips Railway's
+# 500-logs/sec limit. Skipping the group leaves the real checks (postgres/redis/ssl).
+: "${SKIP_H_BACKENDSERVICES:=true}"
 
 export PORT OR_DATA PGDATA MINIO_DATA REDIS_DATA FS_DIR \
   OR_PUBLIC_DOMAIN SITE_URL S3_HOST S3_INTERNAL_HOST \
   S3_KEY S3_SECRET sessions_region AWS_DEFAULT_REGION USER_REPORTS_BUCKET \
   pg_host pg_port pg_user pg_password pg_dbname REDIS_STRING CH_POOL ch_host \
   JWT_SECRET JWT_REFRESH_SECRET JWT_SPOT_SECRET JWT_SPOT_REFRESH_SECRET \
-  ASSIST_JWT_SECRET ASSIST_KEY root_path LOGLEVEL
+  ASSIST_JWT_SECRET ASSIST_KEY root_path LOGLEVEL SKIP_H_BACKENDSERVICES
