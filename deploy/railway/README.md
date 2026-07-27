@@ -65,6 +65,28 @@ real deployment**:
 `RAILWAY_PUBLIC_DOMAIN` is injected by Railway; `or-env.sh` derives `S3_HOST`/`SITE_URL`
 from it if they aren't set explicitly.
 
+### Optional: auto-file a GitHub issue per report
+
+Set both of the first two and **every** uploaded report opens a GitHub issue — there is no
+dashboard step and no way for a reporter to opt out, so expect one issue per button click.
+Leave either empty to disable.
+
+| Var | Purpose |
+|-----|---------|
+| `USER_REPORTS_GITHUB_TOKEN` | Service-level PAT with `repo` scope. The upload endpoint is public (no logged-in user), so the dashboard's per-user GitHub integration cannot be reused here. |
+| `USER_REPORTS_GITHUB_REPO` | Target repo, as `owner/name` or a numeric repo id. |
+| `USER_REPORTS_GITHUB_LABELS` | Comma-separated labels. Default `OpenReplay,user-report` — filter on these, since filing is automatic. |
+| `USER_REPORTS_GITHUB_ASSIGNEES` | Comma-separated GitHub logins. Optional. |
+| `USER_REPORTS_PUBLIC_API_URL` | Override the base URL used for the screenshot link. Defaults to `SITE_URL/api`, which is correct here. |
+
+The issue embeds the screenshot inline via `GET /api/{projectId}/user-reports/{reportId}/image`
+— a **public, unauthenticated** route, because GitHub's image proxy fetches it anonymously
+from its own servers. Two consequences: anyone holding a report's uuid can view that
+screenshot, and the image only renders while this deployment is reachable from the public
+internet. Filing happens in a background task after the upload is acknowledged, so a
+failure never breaks the reporter's submission; the reason is stored on the report and
+shown in the dashboard list.
+
 > **`pg_password` caveat:** it seeds the Postgres cluster on the very first boot (empty
 > `/data/pg`). Changing it later will not re-seed the cluster and chalice auth to Postgres
 > will fail. To change it, also reset the volume (or `ALTER USER` inside the DB).

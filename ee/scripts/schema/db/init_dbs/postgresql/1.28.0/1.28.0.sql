@@ -29,7 +29,15 @@ CREATE TABLE IF NOT EXISTS public.user_reports
     page_url   text                     NULL     DEFAULT NULL,
     -- replay offset in ms from session start; enables deep-linking to the exact moment
     time_ms    bigint                   NULL     DEFAULT NULL,
-    created_at timestamp with time zone NOT NULL DEFAULT now()
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    -- GitHub issue auto-filed for this report. Populated asynchronously after the
+    -- upload returns, so all four stay NULL until the background task lands. On
+    -- failure issue_error holds the reason, which keeps a misconfigured or
+    -- rate-limited integration visible in the dashboard instead of silent.
+    issue_provider text                 NULL     DEFAULT NULL,
+    issue_id       text                 NULL     DEFAULT NULL,
+    issue_url      text                 NULL     DEFAULT NULL,
+    issue_error    text                 NULL     DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS user_reports_project_id_session_id_idx ON public.user_reports (project_id, session_id);

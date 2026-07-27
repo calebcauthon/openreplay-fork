@@ -17,6 +17,16 @@ export interface IUserReport {
   timeMs: number | null;
   /** Presigned image link for the annotated screenshot. */
   URL?: string;
+  /**
+   * Issue auto-filed for this report. The API files it in a background task *after*
+   * acknowledging the upload, so a freshly created report reads back with all four
+   * null for a moment. `issueError` is set instead of `issueUrl` when filing failed,
+   * which is the only place a misconfigured integration surfaces.
+   */
+  issueProvider: string | null;
+  issueId: string | null;
+  issueUrl: string | null;
+  issueError: string | null;
 }
 
 /**

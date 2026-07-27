@@ -1,6 +1,7 @@
 from typing import Optional
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, HTTPException, Request
+from starlette.responses import Response
 
 import schemas
 from chalicelib.core import user_reports
@@ -20,6 +21,7 @@ public_app, app, app_apikey = get_routers(tags=["user-reports"])
 # ---------------------------------------------------------------------------
 @public_app.post('/{projectId}/user-reports', tags=["user-reports"])
 async def upload_user_report(projectId: int, request: Request,
+                             background_tasks: BackgroundTasks,
                              reportId: str,
                              sessionId: Optional[int] = None,
                              note: Optional[str] = None,
@@ -33,12 +35,36 @@ async def upload_user_report(projectId: int, request: Request,
     """
     image = await request.body()
     try:
-        return {"data": user_reports.upload_report(
+        data = user_reports.upload_report(
             project_id=projectId, report_id=reportId, image=image,
             content_type=request.headers.get("content-type"),
-            session_id=sessionId, note=note, page_url=pageUrl, time_ms=timeMs)}
+            session_id=sessionId, note=note, page_url=pageUrl, time_ms=timeMs)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    # Filing runs after the response is sent so the end-user never waits on (or sees a
+    # failure from) the GitHub API. The issue link lands on the row a moment later; the
+    # payload returned here always has issueUrl=None.
+    background_tasks.add_task(user_reports.file_github_issue,
+                              project_id=projectId, report_id=reportId)
+    return {"data": data}
+
+
+@public_app.get('/{projectId}/user-reports/{reportId}/image', tags=["user-reports"])
+def get_user_report_image(projectId: int, reportId: str):
+    """PUBLIC: serve the screenshot bytes under a stable, permanent URL.
+
+    Deliberately unauthenticated: this URL is embedded as an inline image in the
+    auto-filed GitHub issue, and GitHub's camo proxy fetches it anonymously from its own
+    servers. That means anyone holding the report's uuid can view the screenshot, and the
+    instance must be publicly reachable for the image to render at all.
+    """
+    result = user_reports.get_report_image(project_id=projectId, report_id=reportId)
+    if result is None:
+        raise HTTPException(status_code=404, detail="report not found")
+    image, content_type = result
+    # Immutable: a report's screenshot is written once at upload and never replaced.
+    return Response(content=image, media_type=content_type,
+                    headers={"Cache-Control": "public, max-age=31536000, immutable"})
 
 
 # ---------------------------------------------------------------------------
