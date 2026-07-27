@@ -1,6 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
-import { Table, Empty, Button } from 'antd';
+import { Table, Empty, Button, Tooltip } from 'antd';
+import { AlertTriangle, Github } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
@@ -91,6 +92,38 @@ function UserReportsList() {
       // TODO(scaffold): format with App/date helpers (e.g. checkForRecent / durationFormatted)
       render: (createdAt: string) =>
         createdAt ? new Date(createdAt).toLocaleString() : '-',
+    },
+    {
+      title: t('Issue'),
+      key: 'issue',
+      width: 130,
+      render: (_: unknown, record: IUserReport) => {
+        if (record.issueUrl) {
+          return (
+            <a
+              href={record.issueUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 link"
+            >
+              <Github size={14} />
+              {record.issueId ? `#${record.issueId}` : t('View')}
+            </a>
+          );
+        }
+        if (record.issueError) {
+          return (
+            <Tooltip title={record.issueError}>
+              <span className="flex items-center gap-1 text-red">
+                <AlertTriangle size={14} />
+                {t('Failed')}
+              </span>
+            </Tooltip>
+          );
+        }
+        // Nothing filed (yet, or auto-filing is disabled server-side).
+        return <span className="text-disabled-text">-</span>;
+      },
     },
     {
       title: t('Session'),

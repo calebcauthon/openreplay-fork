@@ -2,8 +2,8 @@ import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Button } from 'antd';
-import { ArrowLeft } from 'lucide-react';
+import { Button, Tooltip } from 'antd';
+import { AlertTriangle, ArrowLeft, Github } from 'lucide-react';
 
 import { useStore } from 'App/mstore';
 import { Link, useParams } from 'App/routing';
@@ -78,11 +78,39 @@ function UserReportView() {
                   ) : null}
                 </div>
 
-                {replayPath ? (
-                  <Link to={withSiteId(replayPath, siteId)}>
-                    <Button type="primary">{t('Open Replay')}</Button>
-                  </Link>
-                ) : null}
+                <div className="flex items-center gap-2 shrink-0">
+                  {/*
+                    Rendered only once the background filing task has landed. Reports
+                    stay blank when auto-filing is switched off server-side, so an
+                    always-visible "pending" state would be misleading.
+                  */}
+                  {report.issueUrl ? (
+                    <a href={report.issueUrl} target="_blank" rel="noreferrer">
+                      <Button icon={<Github size={16} />}>
+                        {report.issueId
+                          ? t('Issue #{{id}}', { id: report.issueId })
+                          : t('View Issue')}
+                      </Button>
+                    </a>
+                  ) : null}
+                  {!report.issueUrl && report.issueError ? (
+                    <Tooltip title={report.issueError}>
+                      <Button
+                        danger
+                        type="text"
+                        icon={<AlertTriangle size={16} />}
+                      >
+                        {t('Issue filing failed')}
+                      </Button>
+                    </Tooltip>
+                  ) : null}
+
+                  {replayPath ? (
+                    <Link to={withSiteId(replayPath, siteId)}>
+                      <Button type="primary">{t('Open Replay')}</Button>
+                    </Link>
+                  ) : null}
+                </div>
               </div>
 
               <div className="border rounded-lg overflow-hidden bg-gray-lightest flex items-center justify-center">
