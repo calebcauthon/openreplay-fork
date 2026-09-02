@@ -109,6 +109,9 @@ export default class AnnotationCanvas {
   /** The frozen capture the user annotates, shown as an opaque backdrop. */
   private screenshot: HTMLCanvasElement | null = null
   private textInput: HTMLInputElement | null = null
+  /** Free-text problem description (distinct from the on-canvas 'Text' tool). */
+  private notePanel: HTMLDivElement | null = null
+  private noteField: HTMLTextAreaElement | null = null
   private undoButton: HTMLButtonElement | null = null
   private deleteButton: HTMLButtonElement | null = null
   private readonly toolButtons = new Map<Tool, HTMLButtonElement>()
@@ -136,6 +139,82 @@ export default class AnnotationCanvas {
     })
 
     this.toolbar = this.buildToolbar()
+    this.notePanel = this.buildNotePanel()
+  }
+
+  // ---------------------------------------------------------------------------
+  // Note field
+  // ---------------------------------------------------------------------------
+
+  /**
+   * A free-text description panel that floats above the toolbar.
+   *
+   * This is deliberately *not* the on-canvas 'Text' tool: that draws a label
+   * onto the screenshot pixels, whereas whatever is typed here rides along as
+   * the report's note — the text downstream tooling turns into the body of the
+   * filed ticket. Marked `data-openreplay-hidden` like the rest of the report
+   * UI so the tracker never records the field or its contents.
+   */
+  private buildNotePanel(): HTMLDivElement {
+    const panel = document.createElement('div')
+    panel.setAttribute(HIDDEN, '1')
+    Object.assign(panel.style, {
+      position: 'fixed',
+      left: '50%',
+      bottom: '74px',
+      transform: 'translateX(-50%)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '4px',
+      width: 'min(420px, calc(100vw - 32px))',
+      boxSizing: 'border-box',
+      padding: '10px 12px',
+      borderRadius: '10px',
+      background: '#fff',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.22)',
+      zIndex: String(2147483647 - 1),
+      fontFamily: 'system-ui, sans-serif',
+    })
+
+    const label = document.createElement('label')
+    label.setAttribute(HIDDEN, '1')
+    label.htmlFor = 'openreplay-report-note'
+    label.textContent = 'Describe the problem'
+    Object.assign(label.style, {
+      font: '600 12px system-ui, sans-serif',
+      color: '#555',
+    })
+
+    const field = document.createElement('textarea')
+    field.setAttribute(HIDDEN, '1')
+    field.id = 'openreplay-report-note'
+    field.rows = 3
+    field.placeholder = 'What went wrong? This becomes the ticket description.'
+    Object.assign(field.style, {
+      width: '100%',
+      boxSizing: 'border-box',
+      resize: 'vertical',
+      minHeight: '52px',
+      padding: '8px',
+      border: '1px solid #ccc',
+      borderRadius: '6px',
+      font: '400 13px system-ui, sans-serif',
+      color: '#222',
+      background: '#fff',
+      outline: 'none',
+    })
+    // Keep typing here from tripping the canvas Delete/Escape shortcuts.
+    field.addEventListener('keydown', (e) => e.stopPropagation())
+
+    panel.appendChild(label)
+    panel.appendChild(field)
+    this.noteField = field
+    return panel
+  }
+
+  /** The problem description the user typed, trimmed ('' if left blank). */
+  getNote(): string {
+    return this.noteField?.value.trim() ?? ''
   }
 
   // ---------------------------------------------------------------------------
@@ -807,6 +886,7 @@ export default class AnnotationCanvas {
     document.body.appendChild(backdrop)
 
     document.body.appendChild(this.canvas)
+    if (this.notePanel) document.body.appendChild(this.notePanel)
     document.body.appendChild(this.toolbar)
     this.ctx = this.canvas.getContext('2d')
     this.sizeCanvas(cssWidth, cssHeight, dpr)
@@ -835,6 +915,9 @@ export default class AnnotationCanvas {
     }
     if (this.toolbar.parentNode) {
       this.toolbar.parentNode.removeChild(this.toolbar)
+    }
+    if (this.notePanel?.parentNode) {
+      this.notePanel.parentNode.removeChild(this.notePanel)
     }
   }
 }
