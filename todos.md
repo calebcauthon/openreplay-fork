@@ -48,9 +48,10 @@ matters, since that's the part that isn't recoverable from the diff.
       can't be resolved it dumps raw property names — that was my debugging aid,
       not product copy. `frontend/app/components/DataManagement/Activity/EventDetailsModal.tsx`.
       Keep the graceful fallback, drop the key list.
-- [ ] **`html2canvas` is imported eagerly**, adding ~400 kB to the host app's
-      main bundle on every page view. Move it behind a dynamic `import()` inside
-      `captureScreenshot()` so it loads only when someone files a report.
+- [x] **`html2canvas` is imported eagerly**, adding ~400 kB to the host app's
+      main bundle on every page view. Done: `html2canvas` was replaced by
+      `snapdom`, loaded through a dynamic `import()` inside `captureScreenshot()`
+      so it loads only when someone files a report.
 - [ ] **Verify the standalone User Reports page renders.** The list + detail
       views (`frontend/app/components/UserReports/`) are scaffolded, routed and
       in the nav, but never actually opened — the Activity panel turned out to be

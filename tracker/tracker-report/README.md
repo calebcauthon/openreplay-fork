@@ -116,11 +116,13 @@ tracker.use(
 ## Privacy
 
 The screenshot is produced client-side with
-[`html2canvas`](https://html2canvas.hertzen.com/). **Before** capture, the
-plugin masks the same content OpenReplay masks in the replay: elements matching
-`[data-openreplay-hidden]`, `[data-openreplay-masked]`,
+[`snapdom`](https://snapdom.dev/), which has the browser itself paint a snapshot
+of the page, and is loaded on demand the first time someone files a report.
+**Before** capture, the plugin masks the same content OpenReplay masks in the
+replay: elements matching `[data-openreplay-hidden]`, `[data-openreplay-masked]`,
 `[data-openreplay-obscured]`, and `input[type=password]` are covered with opaque
-overlays that are removed immediately after capture. All UI the plugin injects
+overlays that are removed immediately after capture — including ones inside open
+shadow roots and same-origin iframes. All UI the plugin injects
 (button, annotation canvas, toolbar, mask overlays) is marked
 `data-openreplay-hidden="1"` so the tracker never records it and it never
 appears in the screenshot.

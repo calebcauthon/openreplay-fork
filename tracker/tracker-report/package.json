@@ -27,7 +27,7 @@
     "postversion": "bun run build"
   },
   "dependencies": {
-    "html2canvas": "^1.4.1"
+    "@zumer/snapdom": "3.2.0"
   },
   "peerDependencies": {
     "@openreplay/tracker": ">=14.0.14"
