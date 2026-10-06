@@ -1,7 +1,7 @@
 {
   "name": "@openreplay/tracker-report",
   "description": "Tracker plugin for user-submitted problem reports with freehand annotated screenshots",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "keywords": [
     "report",
     "annotation",
