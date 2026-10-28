@@ -50,7 +50,7 @@ RUN pip install --no-cache-dir --upgrade uv \
 FROM python:3.13-slim-bookworm
 ENV DEBIAN_FRONTEND=noninteractive
 
-# System services: postgres 17 (PGDG), redis, nginx, supervisord, minio + mc client.
+# System services: postgres 17 (PGDG), redis, nginx, supervisord.
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -62,11 +62,13 @@ RUN set -eux; \
       > /etc/apt/sources.list.d/pgdg.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends postgresql-17 postgresql-contrib-17; \
-    arch="$(dpkg --print-architecture)"; case "$arch" in arm64) m=arm64;; *) m=amd64;; esac; \
-    curl -fsSL "https://dl.min.io/server/minio/release/linux-${m}/minio" -o /usr/local/bin/minio; \
-    curl -fsSL "https://dl.min.io/client/mc/release/linux-${m}/mc" -o /usr/local/bin/mc; \
-    chmod +x /usr/local/bin/minio /usr/local/bin/mc; \
     rm -rf /var/lib/apt/lists/*
+
+# MinIO server + mc client. MinIO archived the open-source project in 2026 and dl.min.io
+# now returns 410 for every binary, so take the static binaries from the same image the
+# repo's docker-compose stack runs (BuildKit picks the matching platform automatically).
+COPY --from=ghcr.io/openreplay/minio:2025 /usr/bin/minio /usr/local/bin/minio
+COPY --from=ghcr.io/openreplay/minio:2025 /usr/bin/mc    /usr/local/bin/mc
 
 # Python runtime (site-packages + console scripts like uvicorn) from the deps stage.
 COPY --from=pydeps /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
