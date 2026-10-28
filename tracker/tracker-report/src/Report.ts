@@ -11,6 +11,8 @@ export interface TagPayload {
   session_url?: string
   /** Replay offset in ms from session start — the moment the report was filed. */
   time_ms?: number
+  /** Extra context attached to the report, e.g. `{ 'Reported by': 'caleb' }`. */
+  metadata?: Record<string, string>
 }
 
 export interface Options {
@@ -59,6 +61,14 @@ export interface Options {
    * ```
    */
   onTag?: (key: string, payload: TagPayload) => void
+  /**
+   * Extra fields to attach to every report — e.g. the signed-in user. Called at
+   * submit time (not construction) so it reflects who is logged in when the
+   * report is actually filed. Entries with empty/undefined values are dropped;
+   * the rest are appended to the note so they land in the ticket the report
+   * becomes, and travel structured in the session tag.
+   */
+  getMetadata?: () => Record<string, string | undefined> | undefined
 }
 
 const defaultOptions: Options = {
@@ -170,9 +180,11 @@ export default class Report {
     const annotation = this.annotation
     if (!annotation) return
 
-    // TODO(scaffold): collect a real note from the user (textarea in the
-    // toolbar). Tier 1 ships freehand-only, so note is empty for now.
-    const note = ''
+    // The note the user typed in the report panel, enriched with any metadata
+    // (the signed-in user and the like) so the person and their description
+    // both land in the ticket the report becomes.
+    const metadata = this.collectMetadata()
+    const note = this.composeNote(annotation.getNote(), metadata)
     const pageURL = location.href
     const sessionURL = this.app.getSessionURL?.({ withCurrentTime: true })
     const sessionId = this.app.getSessionID?.()
@@ -196,6 +208,7 @@ export default class Report {
       page_url: pageURL,
       session_url: sessionURL,
       time_ms: timeMs,
+      metadata: Object.keys(metadata).length ? metadata : undefined,
     })
 
     // Path B: upload the annotated screenshot out-of-band.
@@ -206,6 +219,40 @@ export default class Report {
     }
 
     this.teardownOverlay()
+  }
+
+  /** Read the caller's metadata hook, dropping blank values and never throwing. */
+  private collectMetadata(): Record<string, string> {
+    if (!this.options.getMetadata) return {}
+    let raw: Record<string, string | undefined> | undefined
+    try {
+      raw = this.options.getMetadata()
+    } catch (e) {
+      this.app.debug.error('OpenReplay Report: getMetadata threw', e)
+      return {}
+    }
+    const out: Record<string, string> = {}
+    for (const [key, value] of Object.entries(raw || {})) {
+      const trimmed = typeof value === 'string' ? value.trim() : ''
+      if (trimmed) out[key] = trimmed
+    }
+    return out
+  }
+
+  /**
+   * The note that travels downstream (and becomes the ticket body): the typed
+   * description leads; metadata is appended as `Key: value` lines so it lands in
+   * the ticket even when the downstream integration only reads the note text.
+   */
+  private composeNote(typed: string, metadata: Record<string, string>): string {
+    const parts: string[] = []
+    if (typed) parts.push(typed)
+    const metaLines = Object.entries(metadata).map(([k, v]) => `${k}: ${v}`)
+    if (metaLines.length) {
+      if (parts.length) parts.push('')
+      parts.push(...metaLines)
+    }
+    return parts.join('\n')
   }
 
   // ---------------------------------------------------------------------------
